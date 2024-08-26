@@ -15,7 +15,6 @@ function page() {
       const response = await axios.get(
         `${domain}/api/get-data-for-store?storeId=${storeId}&page=1&limit=10`
       );
-      console.log(response);
       setProducts(response.data.data);
     } catch (error: any) {
       console.log(error.response.data.message);
