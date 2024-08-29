@@ -1,10 +1,11 @@
 "use client";
 import Navbar from "@/components/Navbar";
-import EsewaPayment from "@/components/Payment";
 import ShoppingCart from "@/components/ShoppingCart";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 import { domain } from "@/config/config";
 import axios from "axios";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 interface Product {
@@ -17,13 +18,52 @@ interface Product {
 
 const CheckoutPage = () => {
   const [totalPrice, setTotalPrice] = useState<string | number>(0);
+  const [formData, setFormData] = useState<any>("");
+  const [storedCheckout, setStoredCheckout] = useState<any>();
+  const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const data = searchParams.get("data");
 
   useEffect(() => {
-    const handleStorageChange = () => {
-      const storedCheckout = localStorage.getItem("checkout");
+    const checkout = localStorage.getItem("checkout")
+    setStoredCheckout(checkout);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      if (data) {
+        const decodedString = atob(data);
+        const decodedData = JSON.parse(decodedString);
+
+        if (decodedData.status === "COMPLETE") {
+          await axios.post(
+            `${domain}/api/esewa/success`,
+            {
+              transaction_uuid: formData.transaction_uuid,
+            },
+            {
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          localStorage.removeItem("checkout");
+          setStoredCheckout("");
+          toast({
+            title: "Success",
+            description: "Payment completed",
+          });
+        }
+      }
+    })();
+  }, [storedCheckout]);
+
+  useEffect(() => {
+    const handleStorageChange = () => {      
       if (storedCheckout) {
         const parsedCheckout = JSON.parse(storedCheckout);
-  
+
         const calculatedTotalPrice = parsedCheckout.reduce(
           (acc: number, item: Product) => acc + Number(item.price),
           0
@@ -31,14 +71,14 @@ const CheckoutPage = () => {
         setTotalPrice(calculatedTotalPrice);
       }
     };
-  
+
     handleStorageChange();
-  }, []); 
+  }, [storedCheckout]);
 
   const handlePayment = async () => {
     const orderDetails = {
       payment_method: "esewa",
-      amount: 1000,
+      amount: totalPrice,
       products: [{ product: "Test Product", quantity: 1 }],
       address: "Test Address",
     };
@@ -48,9 +88,8 @@ const CheckoutPage = () => {
         `${domain}/api/esewa/initiate-payment`,
         orderDetails
       );
-      console.log(response);
-
-      const formData = response.data.data;
+      const formData = response.data.formData;
+      setFormData(formData);
 
       const form = document.createElement("form");
       form.action = "https://rc-epay.esewa.com.np/api/epay/main/v2/form";
@@ -87,7 +126,12 @@ const CheckoutPage = () => {
               <span>Order total</span>
               <span>Rs.{totalPrice}</span>
             </div>
-            <Button onClick={handlePayment} className="mt-5" variant="outline">
+            <Button
+              onClick={handlePayment}
+              className="mt-5"
+              variant="outline"
+              disabled={totalPrice === 0}
+            >
               Checkout
             </Button>
           </div>
