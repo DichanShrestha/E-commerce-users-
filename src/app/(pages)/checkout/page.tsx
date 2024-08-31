@@ -34,12 +34,14 @@ const CheckoutPage = () => {
       if (data) {
         const decodedString = atob(data);
         const decodedData = JSON.parse(decodedString);
-
+        console.log(decodedData);
+        
         if (decodedData.status === "COMPLETE") {
-          await axios.post(
+          const response = await axios.patch(
             `${domain}/api/esewa/success`,
             {
               transaction_uuid: formData.transaction_uuid,
+              transaction_code: formData.transaction_code,
             },
             {
               headers: {
@@ -47,7 +49,8 @@ const CheckoutPage = () => {
               },
             }
           );
-
+          console.log(response);
+          
           localStorage.removeItem("checkout");
           setStoredCheckout("");
           toast({
@@ -113,10 +116,10 @@ const CheckoutPage = () => {
   return (
     <div>
       <Navbar />
-      <div className="mx-5 w-3/5">
+      <div className="mx-5 w-4/5">
         <h1 className="font-bold text-lg my-3">Shopping Cart</h1>
 
-        <div className="flex justify-between">
+        <div className="flex justify-between gap-20">
           <div className="w-3/5 ">
             <ShoppingCart />
           </div>
