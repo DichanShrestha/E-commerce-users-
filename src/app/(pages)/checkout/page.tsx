@@ -25,7 +25,7 @@ const CheckoutPage = () => {
   const data = searchParams.get("data");
 
   useEffect(() => {
-    const checkout = localStorage.getItem("checkout")
+    const checkout = localStorage.getItem("checkout");
     setStoredCheckout(checkout);
   }, []);
 
@@ -49,7 +49,6 @@ const CheckoutPage = () => {
               },
             }
           );
-          console.log(response);
           
           localStorage.removeItem("checkout");
           setStoredCheckout("");
@@ -78,11 +77,33 @@ const CheckoutPage = () => {
     handleStorageChange();
   }, [storedCheckout]);
 
+  
   const handlePayment = async () => {
+    let checkout = localStorage.getItem("checkout");
+    let products;
+    if (checkout) {
+      try {
+        const parsedCheckout = JSON.parse(checkout); // Ensure this is an array
+  
+        if (Array.isArray(parsedCheckout)) { // Check if the parsed data is an array
+          products = parsedCheckout.map((item: any) => ({
+            product: item.name,
+            quantity: 1,
+          }));
+  
+          console.log(products);
+        } else {
+          console.error("Parsed checkout data is not an array:", parsedCheckout);
+        }
+      } catch (error) {
+        console.error("Failed to parse checkout data:", error);
+      }
+    }
+    
     const orderDetails = {
       payment_method: "esewa",
       amount: totalPrice,
-      products: [{ product: "Test Product", quantity: 1 }],
+      products,
       address: "Test Address",
     };
 
